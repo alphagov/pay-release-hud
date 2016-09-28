@@ -133,22 +133,22 @@ def split_stages(stages):
   if not staging_current:
     staging_promoted = None
     staging_approved = None
-    staging_deployed = None
+    staging_awaiting = None
     production_update = None
   elif not production_current or staging_current.release != production_current.release:
     staging_promoted = None
     if staging_current.production_approved:
       staging_approved = staging_current
-      staging_deployed = None
+      staging_awaiting = None
     else:
       staging_approved = None
-      staging_deployed = staging_current
+      staging_awaiting = staging_current
     production_update = production_current
     production_uptodate = None
   else:
     staging_promoted = staging_current
     staging_approved = None
-    staging_deployed = None
+    staging_awaiting = None
     production_update = None
      
   releases = filter(lambda release: not release.staging_deployed and not release.production_deployed \
@@ -164,7 +164,7 @@ def split_stages(stages):
     [production_update] if production_update else [], 
     [staging_promoted] if staging_promoted else [], 
     [staging_approved] if staging_approved else [], 
-    [staging_deployed] if staging_deployed else [], 
+    [staging_awaiting] if staging_awaiting else [], 
     releases_approved, 
     releases_new
   )
@@ -176,7 +176,7 @@ def start():
   production_update = []
   staging_promoted = []
   staging_approved = []
-  staging_deployed = []
+  staging_awaiting = []
   release_approved = []
   release_new = []
   
@@ -185,7 +185,7 @@ def start():
       repo_production_update,
       repo_staging_promoted,
       repo_staging_approved,
-      repo_staging_deployed,
+      repo_staging_awaiting,
       repo_release_approved,
       repo_release_new) = split_stages(get_stages('alphagov', repo))
   
@@ -193,7 +193,7 @@ def start():
     production_update += repo_production_update
     staging_promoted += repo_staging_promoted
     staging_approved += repo_staging_approved
-    staging_deployed += repo_staging_deployed
+    staging_awaiting += repo_staging_awaiting
     release_approved += repo_release_approved
     release_new += repo_release_new
   
@@ -202,7 +202,7 @@ def start():
     production_update = production_update,
     staging_promoted = staging_promoted,
     staging_approved = staging_approved,
-    staging_deployed = staging_deployed,
+    staging_awaiting = staging_awaiting,
     release_approved = release_approved,
     release_new = release_new
   )

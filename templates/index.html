@@ -23,7 +23,6 @@
       font-size: 120%;
       text-align: center;
       padding: 0.5em 0.5em 0.5em 0.5em;
-      vertical-align: top;
       margin-left: 0.4em;
       margin-right: 0.4em;
     }
@@ -37,11 +36,12 @@
     }
     
     #releases th.releases {
-      border-bottom: solid 5px blue;
+      border-bottom: solid 5px #AEC6CF;
     }
     
     #releases td.category {
       padding: 1.0em 0 0.5em 0;
+      vertical-align: middle;
     }
     
     #releases td.production {
@@ -71,6 +71,10 @@
         background-color: orange;
     }
     
+    .alarm { 
+        background-color: red;
+    }
+    
     .number {
       display: block;
       font-size: 200%;
@@ -83,51 +87,45 @@
 <body>
   <table id="releases">
     <tr>
-      <th colspan="2" class="production">
-        Production
-      </th>
-      
-      <th colspan="3" class="staging">
-        Staging
-      </td>
-      
       <th colspan="2" class="releases">
         Releases
       </td>
+      
+      <th colspan="3" class="staging">
+        Deployed on Staging
+      </td>
+      
+      <th colspan="2" class="production">
+        Deployed on Production
+      </th>
     </tr>
     
     <tr>
-      <td class="category production">Up To Date</td>
-      <td class="category production">Update Needed</td>
-      <td class="category staging">Promoted to Production</td>
-      <td class="category staging">Approved for Production</td>
-      <td class="category staging">Deployed</td>      
-      <td class="category releases">Approved for Staging</td>
       <td class="category releases">New Releases</td>
+      <td class="category releases">Approved for Staging</td>
+      <td class="category staging">Awaiting Approval for Production</td>
+      <td class="category staging">Approved for Production</td>      
+      <td class="category staging">Promoted to Production</td>
+      <td class="category production">Update Needed</td>
+      <td class="category production">Current Version</td>
     </tr>
     
     <tr>
-      <td class="production">
-        {% for release in production_current %}
-            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
+      <td class="releases">
+        {% for release in release_new %}
+            <div class="release {{release.repo}}">
+              {{release.repo}}
+              <span class="number">{{release.release}}</span>
+            </div>
         {% endfor %}
       </td>
       
-      <td class="production">
-        {% for release in production_update %}
-            <div class="release {{release.repo}} warning">{{release.repo}} <span class="number">{{release.release}}</span></div>
-        {% endfor %}
-      </td>
-
-      <td class="staging">
-        {% for release in staging_promoted %}
-            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
-        {% endfor %}
-      </td>
-
-      <td class="staging">
-        {% for release in staging_approved %}
-            <div class="release {{release.repo}} ok">{{release.repo}} <span class="number">{{release.release}}</span></div>
+      <td class="releases">
+        {% for release in release_approved %}
+            <div class="release {{release.repo}} ok">
+              {{release.repo}}
+              <span class="number">{{release.release}}</span>
+            </div>
         {% endfor %}
       </td>
       
@@ -136,15 +134,28 @@
             <div class="release {{release.repo}} warning">{{release.repo}} <span class="number">{{release.release}}</span></div>
         {% endfor %}
       </td>
-
-      <td class="releases">
-        {% for release in release_approved %}
+      
+      <td class="staging">
+        {% for release in staging_approved %}
             <div class="release {{release.repo}} ok">{{release.repo}} <span class="number">{{release.release}}</span></div>
         {% endfor %}
       </td>
       
-      <td class="releases">
-        {% for release in release_new %}
+      <td class="staging">
+        {% for release in staging_promoted %}
+            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+      
+      <td class="production">        
+        {% for release in production_update %}
+            <div class="release {{release.repo}}{% if loop.length > 1 %} alarm{% else %} warning{% endif %}">
+              {{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+
+      <td class="production">
+        {% for release in production_current %}
             <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
         {% endfor %}
       </td>
