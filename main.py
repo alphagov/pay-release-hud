@@ -17,11 +17,10 @@ class Tag:
   def __init__(self, name, url):
     self.name = name
     self.url = url
+    
+  def get_details(self):
+    return requests.get(self.url, headers=headers).json()
 
-
-def get_tag_detail(url):
-  r = requests.get(url, headers=headers)
-  print r.json()
 
 
 def get_tag_refs(org, repo):
@@ -50,6 +49,7 @@ def get_tag_refs(org, repo):
   return tags
   
     
+    
 class Stage:
   def __init__(self, repo, release):
     self.repo = repo
@@ -61,8 +61,8 @@ class Stage:
     self.production_deployed = False
       
   def __repr__(self):
-    return "Stage(%s %s [%s %s %s %s])" % \
-      (self.repo, self.release, self.staging_approved, self.staging_deployed, self.production_approved, self.production_deployed)
+    return "Stage(%s %s [%s %s %s %s %s])" % \
+      (self.repo, self.release, self.staging_approved, self.staging_deployed, self.production_approved, self.production_deployed, self.deploy_behind)
 
   
   
@@ -104,7 +104,9 @@ def get_stages(org, repo):
       stage.staging_deployed = stage.staging_deployed or bool(staging_deployed)
       stage.production_approved = stage.production_approved or bool(production_approved)
       stage.production_deployed = stage.production_deployed or bool(production_deployed)
-    
+  
+  # fetch extra details about stages to be displayed
+  
   def cmp_stages(a, b):
       if a.release < b.release:
           return 1
@@ -118,35 +120,92 @@ def get_stages(org, repo):
 
 
 def split_stages(stages):
-  production_releases = filter(lambda release: release.production_deployed, stages)
-  production_latest = production_releases[0] if len(production_releases) > 0 else None
+  production_history = filter(lambda release: release.production_deployed, stages)
+  production_current = production_history[0] if len(production_history) > 0 else None
+  production_uptodate = production_current
   
-  staging_releases = filter(lambda release: release.staging_deployed \
-    and ((production_latest is None) or (release.release >= production_latest.release)), \
-    stages)
-  staging_latest = staging_releases[0] if len(staging_releases) > 0 else None
+  staging_history = filter(lambda release: release.staging_deployed \
+     and ((production_current is None) or (release.release >= production_current.release)), \
+     stages)
+     
+  staging_current = staging_history[0] if len(staging_history) > 0 else None
   
-  other_releases = filter(lambda release: not release.staging_deployed and not release.production_deployed \
-    and ((production_latest is None) or (release.release > production_latest.release)) \
-    and ((staging_latest is None) or (release.release > staging_latest.release)), \
+  if not staging_current:
+    staging_promoted = None
+    staging_approved = None
+    staging_deployed = None
+    production_update = None
+  elif not production_current or staging_current.release != production_current.release:
+    staging_promoted = None
+    if staging_current.production_approved:
+      staging_approved = staging_current
+      staging_deployed = None
+    else:
+      staging_approved = None
+      staging_deployed = staging_current
+    production_update = production_current
+    production_uptodate = None
+  else:
+    staging_promoted = staging_current
+    staging_approved = None
+    staging_deployed = None
+    production_update = None
+     
+  releases = filter(lambda release: not release.staging_deployed and not release.production_deployed \
+    and ((production_current is None) or (release.release > production_current.release)) \
+    and ((staging_current is None) or (release.release > staging_current.release)), \
     stages)
     
-  return (production_latest, staging_latest, other_releases)
+  releases_approved = filter(lambda release: release.staging_approved, releases)
+  releases_new = filter(lambda release: not release.staging_approved, releases)
+    
+  return (
+    [production_uptodate] if production_uptodate else [], 
+    [production_update] if production_update else [], 
+    [staging_promoted] if staging_promoted else [], 
+    [staging_approved] if staging_approved else [], 
+    [staging_deployed] if staging_deployed else [], 
+    releases_approved, 
+    releases_new
+  )
 
 
 @app.route('/')
 def start():
-  production = []
-  staging = []
-  releases = []
+  production_current = []
+  production_update = []
+  staging_promoted = []
+  staging_approved = []
+  staging_deployed = []
+  release_approved = []
+  release_new = []
   
   for repo in ('pay-connector', 'pay-selfservice', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
-    (production_release, staging_release, other_releases) = split_stages(get_stages('alphagov', repo))
-    if production_release: production += [production_release]
-    if staging_release: staging += [staging_release]
-    releases += other_releases
+    (repo_production_current,
+      repo_production_update,
+      repo_staging_promoted,
+      repo_staging_approved,
+      repo_staging_deployed,
+      repo_release_approved,
+      repo_release_new) = split_stages(get_stages('alphagov', repo))
   
-  return render_template('index.html', production = production, staging = staging, releases = releases)
+    production_current += repo_production_current
+    production_update += repo_production_update
+    staging_promoted += repo_staging_promoted
+    staging_approved += repo_staging_approved
+    staging_deployed += repo_staging_deployed
+    release_approved += repo_release_approved
+    release_new += repo_release_new
+  
+  return render_template('index.html', 
+    production_current = production_current,
+    production_update = production_update,
+    staging_promoted = staging_promoted,
+    staging_approved = staging_approved,
+    staging_deployed = staging_deployed,
+    release_approved = release_approved,
+    release_new = release_new
+  )
 
 
 

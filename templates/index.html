@@ -10,82 +10,60 @@
     }
     
     #releases {
-      width: 400px;
+    }
+    
+    #releases th, td {
+      text-align: center;
+      vertical-align: top;
+      margin: 0;
+      width: 12em;
     }
     
     #releases th {
-      width: 20%;
       font-size: 120%;
       text-align: center;
       padding: 0.5em 0.5em 0.5em 0.5em;
       vertical-align: top;
-    }
-    
-    #releases td {
-    }
-    
-    #releases th, td {
-      border-top: solid 1px white;
       border-bottom: solid 1px white;
+      margin-left: 0.4em;
+      margin-right: 0.4em;
+    }
+    
+    #releases td.category {
+      padding: 1.0em 0 0.5em 0;
+    }
+    
+    #releases td.production {
+      
+    }
+    
+    #releases td.staging {      
     }
     
     .release {
+      position: relative;
       margin: 0.4em;
       border-radius: 25px;
       padding: 15px 20px; 
       color: black;
-      font-weight: bold;
-      overflow: visible;
-    }
-    
-    .pay-connector {
-      background-color: #C23B22;
-    }
-    
-    .pay-selfservice {
       background-color: #AEC6CF;
+      overflow: visible;
+      text-align: center;
+      width: 10em;
     }
     
-    .pay-frontend {
-      background-color: #77DD77;
-    }
-    
-    .pay-publicapi {
-      background-color: #B39EB5;
-    }
-    
-    .pay-cardid {
-      background-color: #FFB347;
-    }
-    
-    .pay-publicauth {
-      background-color: #FDFD96;
-    }
-    
-    .pay-logger {
-      background-color: #836953;
-    }
-    
-    .approved {
-      position: relative;
-    }
-    
-    .approved::after { 
-        position: absolute;
-        left: 100%;
-        top: 0;
-        content: "✓";
-
-        margin: 0 0 0 0.4em;
-
-        background-color: white;
-        color: green;
-
-        border-radius: 25px;
-        padding: 15px; 
-        color: black;
+    .ok { 
         background-color: green;
-        font-weight: bold;
+    }
+    
+    .warning { 
+        background-color: orange;
+    }
+    
+    .number {
+      display: block;
+      font-size: 200%;
+      text-align: center;
     }
   
   </style>
@@ -94,53 +72,69 @@
 <body>
   <table id="releases">
     <tr>
-      <th>
+      <th colspan="2" class="production">
         Production
-      </td>
-    
-      <td>
-        {% for release in production %}
-          <div class="release {{release.repo}}">{{release.repo}} {{release.release}}</div>
-        {% endfor %}
-        
-        <!-- <div class="release connector">connector 56</div>
-        <div class="release selfservice">selfservice 55</div>
-        <div class="release frontend">frontend 55</div>
-        <div class="release publicapi">publicapi 55</div>
-        <div class="release cardid">cardid 55</div>
-        <div class="release publicauth">publicauth 55</div>
-        <div class="release logger">logger 55</div> -->
-      </td>
-    </tr>
-    
-    <tr>
-      <th>
+      </th>
+      
+      <th colspan="3" class="staging">
         Staging
       </td>
       
-      <td>
-        {% for release in staging %}
-          <div class="release {{release.repo}}">{{release.repo}} {{release.release}}</div>
-        {% endfor %}
-        
-        <!-- <div class="release connector approved">connector 56</div>
-        <div class="release selfservice">selfservice 55</div>
-        <div class="release frontend">frontend 55</div>
-        <div class="release publicapi">publicapi 55</div>
-        <div class="release cardid">cardid 55</div>
-        <div class="release publicauth">publicauth 55</div>
-        <div class="release logger">logger 55</div> -->
+      <th colspan="2" class="releases">
+        Releases
       </td>
     </tr>
     
     <tr>
-      <th>
-        Releases
+      <td class="category production">Up To Date</td>
+      <td class="category production">Update Needed</td>
+      <td class="category staging">Promoted to Production</td>
+      <td class="category staging">Approved for Production</td>
+      <td class="category staging">Deployed</td>      
+      <td class="category releases">Approved for Staging</td>
+      <td class="category releases">New Releases</td>
+    </tr>
+    
+    <tr>
+      <td class="production">
+        {% for release in production_current %}
+            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
       </td>
       
-      <td>
-        {% for release in releases %}
-          <div class="release {{release.repo}}{% if release.staging_approved %} approved{% endif %}">{{release.repo}} {{release.release}}</div>
+      <td class="production">
+        {% for release in production_update %}
+            <div class="release {{release.repo}} warning">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+
+      <td class="staging">
+        {% for release in staging_promoted %}
+            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+
+      <td class="staging">
+        {% for release in staging_approved %}
+            <div class="release {{release.repo}} ok">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+      
+      <td class="staging">
+        {% for release in staging_deployed %}
+            <div class="release {{release.repo}} warning">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+
+      <td class="releases">
+        {% for release in release_approved %}
+            <div class="release {{release.repo}} ok">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% endfor %}
+      </td>
+      
+      <td class="releases">
+        {% for release in release_new %}
+            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
         {% endfor %}
       </td>
     </tr>
