@@ -14,7 +14,8 @@ headers = {'Authorization': 'Bearer ' + os.getenv('GITHUB_TOKEN')}
 
 
 class Tag:
-  def __init__(self, name, url):
+  def __init__(self, repo, name, url):
+    self.repo = repo
     self.name = name
     self.url = url
     
@@ -33,7 +34,7 @@ def get_tag_refs(org, repo):
     for ref in r.json():
       name = ref['ref']
       if name.startswith('refs/tags/'):
-        tags += [Tag(name[10:], ref['object']['url'])]
+        tags += [Tag(repo, name[10:], ref['object']['url'])]
 
     # # parse out github's weird pagination format
     tags_url = None
@@ -50,7 +51,7 @@ def get_tag_refs(org, repo):
   
     
     
-class Stage:
+class Release:
   def __init__(self, repo, release):
     self.repo = repo
     self.release = release
@@ -61,14 +62,14 @@ class Stage:
     self.production_deployed = False
       
   def __repr__(self):
-    return "Stage(%s %s [%s %s %s %s %s])" % \
+    return "Release(%s %s [%s %s %s %s %s])" % \
       (self.repo, self.release, self.staging_approved, self.staging_deployed, self.production_approved, self.production_deployed, self.deploy_behind)
 
   
   
-def get_stages(org, repo):
+def get_releases(org, repo):
   tags = get_tag_refs(org, repo)
-  stages = {}
+  releases = {}
   for tag in tags:
     number = None
     
@@ -93,21 +94,21 @@ def get_stages(org, repo):
       number = int(production_deployed.group(1))
     
     if number:
-      if number in stages:
-        stage = stages[number]
+      if number in releases:
+        release = releases[number]
       else:
-        stage = Stage(repo, number)
-        stages[number] = stage
+        release = Release(repo, number)
+        releases[number] = release
     
-      stage.released = stage.released or bool(released)
-      stage.staging_approved = stage.staging_approved or bool(staging_approved)
-      stage.staging_deployed = stage.staging_deployed or bool(staging_deployed)
-      stage.production_approved = stage.production_approved or bool(production_approved)
-      stage.production_deployed = stage.production_deployed or bool(production_deployed)
+      release.released = release.released or bool(released)
+      release.staging_approved = release.staging_approved or bool(staging_approved)
+      release.staging_deployed = release.staging_deployed or bool(staging_deployed)
+      release.production_approved = release.production_approved or bool(production_approved)
+      release.production_deployed = release.production_deployed or bool(production_deployed)
   
-  # fetch extra details about stages to be displayed
+  # fetch extra details about releases to be displayed
   
-  def cmp_stages(a, b):
+  def cmp_releases(a, b):
       if a.release < b.release:
           return 1
       elif a.release == b.release:
@@ -115,18 +116,18 @@ def get_stages(org, repo):
       else:
           return -1
     
-  return sorted(stages.values(), cmp = cmp_stages)
+  return sorted(releases.values(), cmp = cmp_releases)
 
 
 
-def split_stages(stages):
-  production_history = filter(lambda release: release.production_deployed, stages)
+def split_releases(releases):
+  production_history = filter(lambda release: release.production_deployed, releases)
   production_current = production_history[0] if len(production_history) > 0 else None
   production_uptodate = production_current
   
   staging_history = filter(lambda release: release.staging_deployed \
      and ((production_current is None) or (release.release >= production_current.release)), \
-     stages)
+     releases)
      
   staging_current = staging_history[0] if len(staging_history) > 0 else None
   
@@ -154,7 +155,7 @@ def split_stages(stages):
   releases = filter(lambda release: not release.staging_deployed and not release.production_deployed \
     and ((production_current is None) or (release.release > production_current.release)) \
     and ((staging_current is None) or (release.release > staging_current.release)), \
-    stages)
+    releases)
     
   releases_approved = filter(lambda release: release.staging_approved, releases)
   releases_new = filter(lambda release: not release.staging_approved, releases)
@@ -187,7 +188,7 @@ def start():
       repo_staging_approved,
       repo_staging_awaiting,
       repo_release_approved,
-      repo_release_new) = split_stages(get_stages('alphagov', repo))
+      repo_release_new) = split_releases(get_releases('alphagov', repo))
   
     production_current += repo_production_current
     production_update += repo_production_update
