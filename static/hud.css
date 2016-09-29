@@ -1,0 +1,83 @@
+html, body {
+  font-family: sans-serif;
+  color: white;
+  background-color: black;
+  margin: 0;
+  padding: 0;
+}
+
+#releases {
+  border-collapse:collapse;
+}
+
+#releases colgroup {
+  border: solid 20px black;
+}
+
+#releases th, td {
+  text-align: center;
+  vertical-align: top;
+  margin: 0;
+  width: 12em;
+}
+
+#releases th {
+  font-size: 120%;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.5em;
+}
+
+#releases th.production {
+  border-bottom: solid 10px green;
+}
+
+#releases th.staging {
+  border-bottom: solid 10px orange;
+}
+
+#releases th.releases {
+  border-bottom: solid 10px #AEC6CF;
+}
+
+#releases td.category {
+  padding: 1.0em 0 0.5em 0;
+  vertical-align: middle;
+}
+
+#releases td.production {
+  
+}
+
+#releases td.staging {      
+}
+
+.release {
+  position: relative;
+  margin: 0.4em;
+  border-radius: 25px;
+  padding: 15px 20px; 
+  color: black;
+  background-color: #AEC6CF;
+  overflow: visible;
+  text-align: center;
+  width: 10em;
+}
+
+.ok { 
+    background-color: green;
+}
+
+.warning { 
+    background-color: orange;
+}
+
+.alarm { 
+    background-color: red;
+}
+
+.number {
+  display: block;
+  font-size: 200%;
+  text-align: center;
+}

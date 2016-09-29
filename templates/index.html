@@ -1,93 +1,24 @@
 <html>
 <head>
-  <meta http-equiv="refresh" content="60">
-  
+  <!-- <meta http-equiv="refresh" content="60"> -->
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='hud.css') }}">
   <title>Release HUD</title>
-  
-  <style type="text/css">
-    html, body {
-      font-family: sans-serif;
-      color: white;
-      background-color: black;
-    }
-    
-    #releases {
-    }
-    
-    #releases th, td {
-      text-align: center;
-      vertical-align: top;
-      margin: 0;
-      width: 12em;
-    }
-    
-    #releases th {
-      font-size: 120%;
-      text-align: center;
-      padding: 0.5em 0.5em 0.5em 0.5em;
-      margin-left: 0.4em;
-      margin-right: 0.4em;
-    }
-    
-    #releases th.production {
-      border-bottom: solid 5px green;
-    }
-    
-    #releases th.staging {
-      border-bottom: solid 5px orange;
-    }
-    
-    #releases th.releases {
-      border-bottom: solid 5px #AEC6CF;
-    }
-    
-    #releases td.category {
-      padding: 1.0em 0 0.5em 0;
-      vertical-align: middle;
-    }
-    
-    #releases td.production {
-      
-    }
-    
-    #releases td.staging {      
-    }
-    
-    .release {
-      position: relative;
-      margin: 0.4em;
-      border-radius: 25px;
-      padding: 15px 20px; 
-      color: black;
-      background-color: #AEC6CF;
-      overflow: visible;
-      text-align: center;
-      width: 10em;
-    }
-    
-    .ok { 
-        background-color: green;
-    }
-    
-    .warning { 
-        background-color: orange;
-    }
-    
-    .alarm { 
-        background-color: red;
-    }
-    
-    .number {
-      display: block;
-      font-size: 200%;
-      text-align: center;
-    }
-  
-  </style>
 </head>
 
 <body>
   <table id="releases">
+    <colgroup>
+      <col span="2">
+    </colgroup>
+    
+    <colgroup>
+      <col span="3">
+    </colgroup>
+    
+    <colgroup>
+      <col span="2">
+    </colgroup>
+    
     <tr>
       <th colspan="2" class="releases">
         Releases
@@ -114,56 +45,55 @@
     
     <tr>
       <td class="releases">
-        {% for release in release_new %}
-            <div class="release {{release.repo}}">
-              {{release.repo}}
-              <span class="number">{{release.release}}</span>
+        {% for release in stages[Stages.RELEASE_CREATED] %}
+            <div class="release {{release.repo.name}}">
+              {{release.repo.name}}
+              <span class="number">{{release.release_num}}</span>
             </div>
         {% endfor %}
       </td>
       
       <td class="releases">
-        {% for release in release_approved %}
-            <div class="release {{release.repo}} ok">
-              {{release.repo}}
-              <span class="number">{{release.release}}</span>
+        {% for release in stages[Stages.RELEASE_APPROVED] %}
+            <div class="release {{release.repo.name}} ok">
+              {{release.repo.name}}
+              <span class="number">{{release.release_num}}</span>
             </div>
         {% endfor %}
       </td>
       
       <td class="staging">
-        {% for release in staging_deployed %}
-            <div class="release {{release.repo}} warning">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% for release in stages[Stages.STAGING_DEPLOYED] %}
+            <div class="release {{release.repo.name}} warning">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
         {% endfor %}
       </td>
       
       <td class="staging">
-        {% for release in staging_approved %}
-            <div class="release {{release.repo}} ok">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% for release in stages[Stages.STAGING_APPROVED] %}
+            <div class="release {{release.repo.name}} ok">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
         {% endfor %}
       </td>
       
       <td class="staging">
-        {% for release in staging_promoted %}
-            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% for release in stages[Stages.STAGING_PROMOTED] %}
+            <div class="release {{release.repo.name}}">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
         {% endfor %}
       </td>
       
       <td class="production">        
-        {% for release in production_update %}
-            <div class="release {{release.repo}}{% if loop.length > 1 %} alarm{% else %} warning{% endif %}">
-              {{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% for release in stages[Stages.PRODUCTION_BEHIND] %}
+            <div class="release {{release.repo.name}}{% if loop.length > 1 %} alarm{% else %} warning{% endif %}">
+              {{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
         {% endfor %}
       </td>
 
       <td class="production">
-        {% for release in production_current %}
-            <div class="release {{release.repo}}">{{release.repo}} <span class="number">{{release.release}}</span></div>
+        {% for release in stages[Stages.PRODUCTION_DEPLOYED] %}
+            <div class="release {{release.repo.name}}">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
         {% endfor %}
       </td>
     </tr>
   </table>
 
 </body>
-
 </html>

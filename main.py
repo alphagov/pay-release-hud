@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-from flask import Flask, redirect, render_template, url_for, request
+from flask import Flask, render_template
 import os
 import requests
 import json
 import re
-import collections
+
+from itertools import groupby
+from enum import Enum 
 
 app = Flask(__name__)
 
@@ -13,204 +15,183 @@ headers = {'Authorization': 'Bearer ' + os.getenv('GITHUB_TOKEN')}
 
 
 
+class Repo:
+  def __init__(self, org, name):
+    self.org = org
+    self.name = name
+    
+  def fetch_tags(self):
+    tags = []
+    tags_url = 'https://api.github.com/repos/%s/git/refs/tags?per_page=100' % str(self)
+  
+    while tags_url:
+      r = requests.get(tags_url, headers=headers)
+
+      for ref in r.json():
+        name = ref['ref']
+        if name.startswith('refs/tags/'):
+          tags.append(Tag(self, name[10:], ref['object']['url']))
+
+      # # parse out github's weird pagination format
+      tags_url = None
+      if 'Link' in r.headers:
+        links = map(lambda x: x.strip(), r.headers['Link'].split(','))
+        for link in links:
+          (url, rel) = link.split(';')
+          if rel.strip() == 'rel="next"':
+            url = url.strip()
+            if url[0] == '<' and url[-1] == '>':
+              tags_url = url[1:-1]
+
+    #tags += [Tag(self, 'alpha_production-1-58', None)]
+    return tags# + [Tag(self, 'approved-alpha_release-58', None), Tag(self, 'alpha_staging-1-58', None), Tag(self, 'approved-alpha_staging-1-58', None)]
+    
+  def __repr__(self):
+    return 'Repo(%s)' % str(self)
+    
+  def __str__(self):
+    return '%s/%s' % (self.org, self.name)
+  
+    
+    
+class TagType(Enum):
+  UNKNOWN = 0
+  RELEASE_CREATED = 1
+  RELEASE_APPROVED = 2
+  STAGING_DEPLOYED = 3
+  STAGING_APPROVED = 4
+  PRODUCTION_DEPLOYED = 5
+  
+  
+
 class Tag:
   def __init__(self, repo, name, url):
     self.repo = repo
     self.name = name
     self.url = url
     
+    release_created_match = re.match('^alpha_release-([0-9]+)$', self.name)
+    if release_created_match:
+      self.release_num = int(release_created_match.group(1))
+      self.type = TagType.RELEASE_CREATED
+    else:    
+      release_approved_match = re.match('^approved-alpha_release-([0-9]+)$', self.name)
+      if release_approved_match:
+        self.release_num = int(release_approved_match.group(1))
+        self.type = TagType.RELEASE_APPROVED
+      else:
+        staging_deployed_match = re.match('^alpha_staging-[0-9]+-([0-9]+)$', self.name)
+        if staging_deployed_match:
+          self.release_num = int(staging_deployed_match.group(1))
+          self.type = TagType.STAGING_DEPLOYED
+        else:
+          staging_approved_match = re.match('^approved-alpha_staging-[0-9]+-([0-9]+)$', self.name)
+          if staging_approved_match:
+            self.release_num = int(staging_approved_match.group(1))
+            self.type = TagType.STAGING_APPROVED
+          else:    
+            production_deployed_match = re.match('^alpha_production-[0-9]+-([0-9]+)$', self.name)
+            if production_deployed_match:
+              self.release_num = int(production_deployed_match.group(1))
+              self.type = TagType.PRODUCTION_DEPLOYED
+            else:
+              self.release_num = None
+              self.type = TagType.UNKNOWN
+    
   def get_details(self):
     return requests.get(self.url, headers=headers).json()
 
-
-
-def get_tag_refs(org, repo):
-  tags = []
-  tags_url = 'https://api.github.com/repos/%s/%s/git/refs/tags?per_page=100' % (org, repo)
+  def __repr__(self):
+    return "Tag(%s %s %s)" % (self.name, self.release_num, self.type)
   
-  while tags_url:
-    r = requests.get(tags_url, headers=headers)
-
-    for ref in r.json():
-      name = ref['ref']
-      if name.startswith('refs/tags/'):
-        tags += [Tag(repo, name[10:], ref['object']['url'])]
-
-    # # parse out github's weird pagination format
-    tags_url = None
-    if 'Link' in r.headers:
-      links = map(lambda x: x.strip(), r.headers['Link'].split(','))
-      for link in links:
-        (url, rel) = link.split(';')
-        if rel.strip() == 'rel="next"':
-          url = url.strip()
-          if url[0] == '<' and url[-1] == '>':
-            tags_url = url[1:-1]
-
-  return tags
   
-    
     
 class Release:
-  def __init__(self, repo, release):
-    self.repo = repo
-    self.release = release
-    self.released = False
-    self.staging_approved = False
-    self.staging_deployed = False
-    self.production_approved = False
-    self.production_deployed = False
-      
+  def __init__(self, release_num, tags):
+    self.release_num = release_num
+    self.tags = tags
+    self.repo = self.tags[0].repo
+    self.stage = TagType(max(map(lambda tag: tag.type.value, tags)))
+
   def __repr__(self):
-    return "Release(%s %s [%s %s %s %s %s])" % \
-      (self.repo, self.release, self.staging_approved, self.staging_deployed, self.production_approved, self.production_deployed, self.deploy_behind)
+    return "Release(%s %s %s)" % (self.repo, self.release_num, TagType(self.stage))
 
-  
-  
-def get_releases(org, repo):
-  tags = get_tag_refs(org, repo)
-  releases = {}
-  for tag in tags:
-    number = None
-    
-    released = re.match('^alpha_release-([0-9]+)$', tag.name)
-    if released:
-      number = int(released.group(1))
+
+
+class Stages(Enum):
+  RELEASE_CREATED     = 1
+  RELEASE_APPROVED    = 2
+  STAGING_DEPLOYED    = 3
+  STAGING_APPROVED    = 4
+  STAGING_PROMOTED    = 5
+  PRODUCTION_BEHIND   = 6
+  PRODUCTION_DEPLOYED = 7
+
+
+
+def build_stages(repo):
+  tags = sorted(filter(lambda tag: tag.type is not TagType.UNKNOWN, repo.fetch_tags()), key=lambda t : t.release_num)
+  releases = []
+  for release_num, tags in groupby(tags, lambda t: t.release_num):
+    releases.append(Release(release_num, list(tags)))
+
+  # pop relevant releases for each sequential stage
+  stages = {}
       
-    staging_approved = re.match('^approved-alpha_release-([0-9]+)$', tag.name)
-    if staging_approved:
-      number = int(staging_approved.group(1))
-    
-    staging_deployed = re.match('^alpha_staging-[0-9]+-([0-9]+)$', tag.name)
-    if staging_deployed:
-      number = int(staging_deployed.group(1))
-      
-    production_approved = re.match('^approved-alpha_staging-[0-9]+-([0-9]+)$', tag.name)
-    if production_approved:
-      number = int(production_approved.group(1))
-      
-    production_deployed = re.match('^alpha_production-[0-9]+-([0-9]+)$', tag.name)
-    if production_deployed:
-      number = int(production_deployed.group(1))
-    
-    if number:
-      if number in releases:
-        release = releases[number]
-      else:
-        release = Release(repo, number)
-        releases[number] = release
-    
-      release.released = release.released or bool(released)
-      release.staging_approved = release.staging_approved or bool(staging_approved)
-      release.staging_deployed = release.staging_deployed or bool(staging_deployed)
-      release.production_approved = release.production_approved or bool(production_approved)
-      release.production_deployed = release.production_deployed or bool(production_deployed)
-  
-  # fetch extra details about releases to be displayed
-  
-  def cmp_releases(a, b):
-      if a.release < b.release:
-          return 1
-      elif a.release == b.release:
-          return 0
-      else:
-          return -1
-    
-  return sorted(releases.values(), cmp = cmp_releases)
+  stages[Stages.RELEASE_CREATED] = []
+  while releases and releases[-1].stage == TagType.RELEASE_CREATED:
+    stages[Stages.RELEASE_CREATED].append(releases.pop())
 
+  stages[Stages.RELEASE_APPROVED] = []
+  while releases and releases[-1].stage == TagType.RELEASE_APPROVED:
+    stages[Stages.RELEASE_APPROVED].append(releases.pop())
 
+  stages[Stages.STAGING_DEPLOYED] = []
+  while releases and releases[-1].stage == TagType.STAGING_DEPLOYED:
+    stages[Stages.STAGING_DEPLOYED].append(releases.pop())
 
-def split_releases(releases):
-  production_history = filter(lambda release: release.production_deployed, releases)
-  production_current = production_history[0] if len(production_history) > 0 else None
-  production_uptodate = production_current
+  stages[Stages.STAGING_APPROVED] = []
+  while releases and releases[-1].stage == TagType.STAGING_APPROVED:
+    stages[Stages.STAGING_APPROVED].append(releases.pop())
+
+  stages[Stages.PRODUCTION_DEPLOYED] = []
+  while releases and releases[-1].stage == TagType.PRODUCTION_DEPLOYED:
+    stages[Stages.PRODUCTION_DEPLOYED].append(releases.pop())
+
+  # only show the current version for what's deployed 
+  if stages[Stages.STAGING_DEPLOYED]: 
+    stages[Stages.STAGING_DEPLOYED] = stages[Stages.STAGING_DEPLOYED][0:1]
   
-  staging_history = filter(lambda release: release.staging_deployed \
-     and ((production_current is None) or (release.release >= production_current.release)), \
-     releases)
-     
-  staging_current = staging_history[0] if len(staging_history) > 0 else None
-  
-  if not staging_current:
-    staging_promoted = None
-    staging_approved = None
-    staging_awaiting = None
-    production_update = None
-  elif not production_current or staging_current.release != production_current.release:
-    staging_promoted = None
-    if staging_current.production_approved:
-      staging_approved = staging_current
-      staging_awaiting = None
-    else:
-      staging_approved = None
-      staging_awaiting = staging_current
-    production_update = production_current
-    production_uptodate = None
+  if stages[Stages.PRODUCTION_DEPLOYED]:
+    stages[Stages.PRODUCTION_DEPLOYED] = stages[Stages.PRODUCTION_DEPLOYED][0:1]
+
+  # if nothing showing on staging pending list, staging must be on same version as production
+  if not stages[Stages.STAGING_DEPLOYED] and not stages[Stages.STAGING_APPROVED]:
+    stages[Stages.STAGING_PROMOTED] = stages[Stages.PRODUCTION_DEPLOYED]
   else:
-    staging_promoted = staging_current
-    staging_approved = None
-    staging_awaiting = None
-    production_update = None
-     
-  releases = filter(lambda release: not release.staging_deployed and not release.production_deployed \
-    and ((production_current is None) or (release.release > production_current.release)) \
-    and ((staging_current is None) or (release.release > staging_current.release)), \
-    releases)
+    stages[Stages.STAGING_PROMOTED] = []
+  
+  # show production as needing update if there are staging releases approved for production
+  if stages[Stages.STAGING_APPROVED]:
+    stages[Stages.PRODUCTION_BEHIND] = stages[Stages.PRODUCTION_DEPLOYED]
+    stages[Stages.PRODUCTION_DEPLOYED] = []
+  else:
+    stages[Stages.PRODUCTION_BEHIND] = []
     
-  releases_approved = filter(lambda release: release.staging_approved, releases)
-  releases_new = filter(lambda release: not release.staging_approved, releases)
-    
-  return (
-    [production_uptodate] if production_uptodate else [], 
-    [production_update] if production_update else [], 
-    [staging_promoted] if staging_promoted else [], 
-    [staging_approved] if staging_approved else [], 
-    [staging_awaiting] if staging_awaiting else [], 
-    releases_approved, 
-    releases_new
-  )
+  return stages
+
 
 
 @app.route('/')
 def start():
-  production_current = []
-  production_update = []
-  staging_promoted = []
-  staging_approved = []
-  staging_awaiting = []
-  release_approved = []
-  release_new = []
+  stages = []
+  for repo in ('pay-selfservice', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
+    stages.append(build_stages(Repo('alphagov', repo)))
   
-  for repo in ('pay-connector', 'pay-selfservice', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
-    (repo_production_current,
-      repo_production_update,
-      repo_staging_promoted,
-      repo_staging_approved,
-      repo_staging_awaiting,
-      repo_release_approved,
-      repo_release_new) = split_releases(get_releases('alphagov', repo))
-  
-    production_current += repo_production_current
-    production_update += repo_production_update
-    staging_promoted += repo_staging_promoted
-    staging_approved += repo_staging_approved
-    staging_awaiting += repo_staging_awaiting
-    release_approved += repo_release_approved
-    release_new += repo_release_new
-  
-  return render_template('index.html', 
-    production_current = production_current,
-    production_update = production_update,
-    staging_promoted = staging_promoted,
-    staging_approved = staging_approved,
-    staging_awaiting = staging_awaiting,
-    release_approved = release_approved,
-    release_new = release_new
-  )
+  return render_template('index.html', stages = reduce(lambda x, y: dict((k, v + y[k]) for k, v in x.iteritems()), stages), Stages = Stages)
 
 
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-    
