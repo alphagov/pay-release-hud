@@ -52,11 +52,11 @@ class Repo:
     
     
 class TagType(Enum):
-  UNKNOWN = 0
-  RELEASE_CREATED = 1
-  RELEASE_APPROVED = 2
-  STAGING_DEPLOYED = 3
-  STAGING_APPROVED = 4
+  UNKNOWN             = 0
+  RELEASE_CREATED     = 1
+  RELEASE_APPROVED    = 2
+  STAGING_DEPLOYED    = 3
+  STAGING_APPROVED    = 4
   PRODUCTION_DEPLOYED = 5
   
   
@@ -113,6 +113,9 @@ class Tag:
     
     return self._commit
     
+  def get_html_url(self):
+    return self.get_commit().get('html_url', '')
+    
   def get_merge_date(self):
     return datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
     
@@ -144,6 +147,9 @@ class Release:
     
   def get_feature_author(self):
     return self.tags[0].get_feature_author()
+    
+  def get_html_url(self):
+    return self.tags[0].get_html_url()
 
   def __repr__(self):
     return "Release(%s %s %s)" % (self.repo, self.release_num, TagType(self.stage))

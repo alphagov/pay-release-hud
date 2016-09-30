@@ -66,6 +66,10 @@ html, body {
   font-weight: bold;
 }
 
+.release a {
+  color: blue!important;
+}
+
 .ok { 
     background-color: green;
 }
