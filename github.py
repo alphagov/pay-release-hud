@@ -222,7 +222,7 @@ def build_stages(repo):
     stages[Stages.STAGING_PROMOTED] = []
   
   # show production as needing update if there are staging releases approved for production
-  if stages[Stages.STAGING_APPROVED]:
+  if stages[Stages.STAGING_APPROVED] or stages[Stages.STAGING_DEPLOYED]:
     stages[Stages.PRODUCTION_BEHIND] = stages[Stages.PRODUCTION_DEPLOYED]
     stages[Stages.PRODUCTION_DEPLOYED] = []
   else:
