@@ -7,6 +7,7 @@ html, body {
 }
 
 #releases {
+  width: 100%;
   border-collapse:collapse;
 }
 
@@ -18,7 +19,7 @@ html, body {
   text-align: center;
   vertical-align: top;
   margin: 0;
-  width: 12em;
+  width: 14%;
 }
 
 #releases th {
@@ -61,7 +62,8 @@ html, body {
   background-color: #AEC6CF;
   overflow: visible;
   text-align: center;
-  width: 10em;
+  width: auto;
+  font-weight: bold;
 }
 
 .ok { 
