@@ -1,5 +1,5 @@
 html, body {
-  font-family: sans-serif;
+  font-family: ntatabularnumbers, nta, sans-serif;
   color: white;
   background-color: black;
   margin: 0;
@@ -26,15 +26,15 @@ html, body {
   font-size: 120%;
   text-align: center;
   vertical-align: middle;
-  padding: 0.5em;
+  padding: 0.25em;
 }
 
 #releases th.production {
-  border-bottom: solid 10px green;
+  border-bottom: solid 10px #5c9317;
 }
 
 #releases th.staging {
-  border-bottom: solid 10px orange;
+  border-bottom: solid 10px #F47738;
 }
 
 #releases th.releases {
@@ -42,7 +42,7 @@ html, body {
 }
 
 #releases td.category {
-  padding: 1.0em 0 0.5em 0;
+  padding: 0.75em 0 0.25em 0;
   vertical-align: middle;
 }
 
@@ -54,32 +54,31 @@ html, body {
 }
 
 .release {
+  font-size: 110%;
   position: relative;
-  margin: 0.4em;
+  margin: 0.4em 0.2em;
   border-radius: 25px;
-  padding: 10px 15px; 
-  color: black;
-  background-color: #AEC6CF;
-  overflow: visible;
+  padding: 5px 10px; 
+  color: white;
+  background-color: #7F8078;
   text-align: center;
   width: auto;
-  font-weight: bold;
 }
 
 .release a {
-  color: blue!important;
+  color: white!important;
 }
 
 .ok { 
-    background-color: green;
+    background-color: #5c9317;
 }
 
 .warning { 
-    background-color: orange;
+    background-color: #F47738;
 }
 
 .alarm { 
-    background-color: red;
+    background-color: #BF1E2D;
 }
 
 .number {
@@ -98,6 +97,7 @@ html, body {
   border-radius: 10px;
   background-color: white;
   color: black;
+  font-size: 80%;
 }
 
 .timestamp {
