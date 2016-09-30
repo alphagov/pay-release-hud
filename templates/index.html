@@ -1,6 +1,6 @@
 <html>
 <head>
-  <!-- <meta http-equiv="refresh" content="60"> -->
+  <meta http-equiv="refresh" content="60">
   <link rel=stylesheet type=text/css href="{{ url_for('static', filename='hud.css') }}">
   <title>Release HUD</title>
 </head>
@@ -46,50 +46,44 @@
     <tr>
       <td class="releases">
         {% for release in stages[Stages.RELEASE_CREATED] %}
-            <div class="release {{release.repo.name}}">
-              {{release.repo.name}}
-              <span class="number">{{release.release_num}}</span>
-            </div>
+            <div class="release {{release.repo.name}}">{% include 'release.html' %}</div>
         {% endfor %}
       </td>
       
       <td class="releases">
         {% for release in stages[Stages.RELEASE_APPROVED] %}
-            <div class="release {{release.repo.name}} ok">
-              {{release.repo.name}}
-              <span class="number">{{release.release_num}}</span>
-            </div>
+            <div class="release {{release.repo.name}} ok">{% include 'release.html' %}</div>
         {% endfor %}
       </td>
       
       <td class="staging">
         {% for release in stages[Stages.STAGING_DEPLOYED] %}
-            <div class="release {{release.repo.name}} warning">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
+            <div class="release {{release.repo.name}} warning">{% include 'release.html' %}</div>
         {% endfor %}
       </td>
       
       <td class="staging">
         {% for release in stages[Stages.STAGING_APPROVED] %}
-            <div class="release {{release.repo.name}} ok">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
+            <div class="release {{release.repo.name}} ok">{% include 'release.html' %}</div>
         {% endfor %}
       </td>
       
       <td class="staging">
         {% for release in stages[Stages.STAGING_PROMOTED] %}
-            <div class="release {{release.repo.name}}">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
+            <div class="release {{release.repo.name}}">{% include 'release.html' %}</div>
         {% endfor %}
       </td>
       
       <td class="production">        
         {% for release in stages[Stages.PRODUCTION_BEHIND] %}
             <div class="release {{release.repo.name}}{% if loop.length > 1 %} alarm{% else %} warning{% endif %}">
-              {{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
+              {% include 'release.html' %}</div>
         {% endfor %}
       </td>
 
       <td class="production">
         {% for release in stages[Stages.PRODUCTION_DEPLOYED] %}
-            <div class="release {{release.repo.name}}">{{release.repo.name}} <span class="number">{{release.release_num}}</span></div>
+            <div class="release {{release.repo.name}}">{% include 'release.html' %}</div>
         {% endfor %}
       </td>
     </tr>

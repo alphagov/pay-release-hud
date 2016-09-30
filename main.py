@@ -5,6 +5,7 @@ import os
 import requests
 import json
 import re
+import datetime
 
 from itertools import groupby
 from enum import Enum 
@@ -97,9 +98,38 @@ class Tag:
             else:
               self.release_num = None
               self.type = TagType.UNKNOWN
+              
+    # caching
+    self._details = None
+    self._commit = None
+    self._feature_commit = None
     
   def get_details(self):
-    return requests.get(self.url, headers=headers).json()
+    if not self._details:
+      self._details = requests.get(self.url, headers=headers).json()
+      
+    return self._details
+    
+  def get_commit(self):
+    if not self._commit:
+      commit_url = self.get_details()['object']['url']
+      self._commit = requests.get(commit_url, headers=headers).json()
+    
+    return self._commit
+    
+  def get_merge_date(self):
+    return datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+    
+  def get_feature_commit(self):
+    if not self._feature_commit:
+      # get the high level commit object not the git object for more detail on login
+      feature_commit_url = self.get_commit()['parents'][1]['url'].replace('/git/', '/')
+      self._feature_commit = requests.get(feature_commit_url, headers=headers).json()
+      
+    return self._feature_commit
+    
+  def get_feature_author(self):
+    return self.get_feature_commit()['committer']
 
   def __repr__(self):
     return "Tag(%s %s %s)" % (self.name, self.release_num, self.type)
@@ -112,6 +142,12 @@ class Release:
     self.tags = tags
     self.repo = self.tags[0].repo
     self.stage = TagType(max(map(lambda tag: tag.type.value, tags)))
+
+  def get_merge_date(self):
+    return self.tags[0].get_merge_date()
+    
+  def get_feature_author(self):
+    return self.tags[0].get_feature_author()
 
   def __repr__(self):
     return "Release(%s %s %s)" % (self.repo, self.release_num, TagType(self.stage))
@@ -185,10 +221,17 @@ def build_stages(repo):
 @app.route('/')
 def start():
   stages = []
-  for repo in ('pay-selfservice', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
+  for repo in ('pay-connector', 'pay-selfservice', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
     stages.append(build_stages(Repo('alphagov', repo)))
+    
+  # add over list items
+  stages_all = reduce(lambda x, y: dict((k, v + y[k]) for k, v in x.iteritems()), stages)
   
-  return render_template('index.html', stages = reduce(lambda x, y: dict((k, v + y[k]) for k, v in x.iteritems()), stages), Stages = Stages)
+  # sort by date. oldest at the top.
+  for stage, releases in stages_all.items():
+    stages_all[stage] = sorted(releases, key=lambda r: r.get_merge_date())
+  
+  return render_template('index.html', stages = stages_all, Stages = Stages)
 
 
 

@@ -1,0 +1,4 @@
+              {{release.repo.name}}
+              <span class="number">{{release.release_num}}</span>
+              <span class="author">{{release.get_feature_author()['login']}}</span>
+              <span class="timestamp">{{release.get_merge_date().strftime('%d/%m %H:%M')}}</span>

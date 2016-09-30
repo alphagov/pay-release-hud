@@ -56,7 +56,7 @@ html, body {
   position: relative;
   margin: 0.4em;
   border-radius: 25px;
-  padding: 15px 20px; 
+  padding: 10px 15px; 
   color: black;
   background-color: #AEC6CF;
   overflow: visible;
@@ -78,6 +78,22 @@ html, body {
 
 .number {
   display: block;
-  font-size: 200%;
+  font-size: 150%;
   text-align: center;
+}
+
+.author, .timestamp {
+  display: block;
+  padding: 2px;
+  margin: 2px;
+}
+
+.author {
+  border-radius: 10px;
+  background-color: #604040;
+  color: white;
+}
+
+.timestamp {
+  font-size: 70%;
 }
