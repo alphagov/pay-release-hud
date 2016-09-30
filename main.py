@@ -129,7 +129,7 @@ class Tag:
     return self._feature_commit
     
   def get_feature_author(self):
-    return self.get_feature_commit()['committer']
+    return self.get_feature_commit().get('committer', default = None)
 
   def __repr__(self):
     return "Tag(%s %s %s)" % (self.name, self.release_num, self.type)
