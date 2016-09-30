@@ -13,6 +13,34 @@ from enum import Enum
 headers = {'Authorization': 'Bearer ' + os.getenv('GITHUB_TOKEN')}
 
 
+
+# cache some things
+object_cache = {}
+
+def get_object_and_headers(url, cache = False, fallback = False):
+  if cache and (url in object_cache):
+    return object_cache[url]
+  
+  r = requests.get(url, headers=headers)
+  if r.status_code < 400:
+    object = (r.headers, r.json())
+    object_cache[url] = object
+    return object
+  elif fallback:
+    if cache and (url in object_cache):
+      return object_cache[url]
+    else:
+      r.raise_for_status()
+  else:
+    r.raise_for_status()
+  
+
+
+def get_object(url, cache = False):
+  return get_object_and_headers(url, cache)[1]
+
+
+
 class Repo:
   def __init__(self, org, name):
     self.org = org
@@ -23,16 +51,15 @@ class Repo:
     tags_url = 'https://api.github.com/repos/%s/git/refs/tags?per_page=100' % str(self)
   
     while tags_url:
-      r = requests.get(tags_url, headers=headers)
-      
-      for ref in r.json():
+      (headers, content) = get_object_and_headers(tags_url, False, True)
+      for ref in content:
         name = ref['ref']
         if name.startswith('refs/tags/'):
           tags.append(Tag(self, name[10:], ref['object']['url']))
 
       # # parse out github's weird pagination format
       tags_url = None
-      if 'Link' in r.headers:
+      if 'Link' in headers:
         links = map(lambda x: x.strip(), r.headers['Link'].split(','))
         for link in links:
           (url, rel) = link.split(';')
@@ -94,24 +121,13 @@ class Tag:
             else:
               self.release_num = None
               self.type = TagType.UNKNOWN
-              
-    # caching
-    self._details = None
-    self._commit = None
-    self._feature_commit = None
+            
     
   def get_details(self):
-    if not self._details:
-      self._details = requests.get(self.url, headers=headers).json()
-      
-    return self._details
+    return get_object(self.url, True)
     
   def get_commit(self):
-    if not self._commit:
-      commit_url = self.get_details()['object']['url']
-      self._commit = requests.get(commit_url, headers=headers).json()
-    
-    return self._commit
+    return get_object(self.get_details()['object']['url'], True)
     
   def get_html_url(self):
     return self.get_commit().get('html_url', '')
@@ -120,12 +136,8 @@ class Tag:
     return datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
     
   def get_feature_commit(self):
-    if not self._feature_commit:
-      # get the high level commit object not the git object for more detail on login
-      feature_commit_url = self.get_commit()['parents'][1]['url'].replace('/git/', '/')
-      self._feature_commit = requests.get(feature_commit_url, headers=headers).json()
-      
-    return self._feature_commit
+    feature_commit_url = self.get_commit()['parents'][1]['url'].replace('/git/', '/')
+    return get_object(feature_commit_url, True)
     
   def get_feature_author(self):
     return self.get_feature_commit().get('committer', None)
