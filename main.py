@@ -2,7 +2,7 @@
 
 from flask import Flask, render_template
 from github import *
-import os, sys
+import os, sys, traceback
 
 app = Flask(__name__)
 
@@ -24,6 +24,7 @@ def start():
     return render_template('index.html', stages = stages_all, Stages = Stages)
   except:
     print "Unexpected error:", sys.exc_info()[0]
+    traceback.print_exc()
     return render_template('error.html')
 
 
