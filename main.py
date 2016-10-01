@@ -11,7 +11,7 @@ app = Flask(__name__)
 def start():
   try:
     stages = []
-    for repo in ('pay-connector', 'pay-selfservice', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
+    for repo in ('pay-selfservice', 'pay-connector', 'pay-frontend', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
       stages.append(build_stages(Repo('alphagov', repo)))
     
     # add over list items

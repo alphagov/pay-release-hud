@@ -136,11 +136,19 @@ class Tag:
     return datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
     
   def get_feature_commit(self):
-    feature_commit_url = self.get_commit()['parents'][1]['url'].replace('/git/', '/')
-    return get_object(feature_commit_url, True)
+    parents = self.get_commit()['parents']
+    if len(parents) > 1:
+      feature_commit_url = parents[1]['url'].replace('/git/', '/')
+      return get_object(feature_commit_url, True)
+    else:
+      return None
     
   def get_feature_author(self):
-    return self.get_feature_commit().get('committer', None)
+    feature_commit = self.get_feature_commit()
+    if feature_commit:
+      return feature_commit.get('committer', None)
+    else:
+      return {'login': '???'}
 
   def __repr__(self):
     return "Tag(%s %s %s)" % (self.name, self.release_num, self.type)
@@ -179,53 +187,95 @@ class Stages(Enum):
 
 
 
+class Component:
+  def __init__(self, repo):
+    tags = sorted(filter(lambda tag: tag.type is not TagType.UNKNOWN, repo.fetch_tags()), key=lambda t : t.release_num)
+    
+    # build releases list, newest first
+    releases = []
+    for release_num, tags in groupby(tags, lambda t: t.release_num):
+      releases.insert(0, Release(release_num, list(tags)))
+
+    try:
+      # find latest production deploy
+      production_deployed = next(r for r in releases if r.stage == TagType.PRODUCTION_DEPLOYED)
+      staging_release_num_cutoff = production_deployed.release_num
+    except StopIteration:
+      production_deployed = None
+      staging_release_num_cutoff = -1
+      
+    try:
+      # find latest staging release (only one)
+      # it will either be in STAGING_APPROVED or STAGING_DEPLOYED
+      staging_release = next(r for r in releases \
+        if (r.release_num > staging_release_num_cutoff) and ((r.stage == TagType.STAGING_APPROVED) or (r.stage == TagType.STAGING_DEPLOYED)))
+    
+      # separate further in to stages
+      self.staging_approved = staging_release if staging_release.stage == TagType.STAGING_APPROVED else None
+      self.staging_deployed = staging_release if staging_release.stage == TagType.STAGING_DEPLOYED else None
+      self.staging_promoted = None
+      self.production_behind = production_deployed
+      self.production_deployed = None
+    
+      release_num_cutoff = min(production_deployed.release_num, staging_release.release_num)
+    except StopIteration:
+      # no staging release so staging must be same as production
+      self.staging_approved = None
+      self.staging_deployed = None
+      self.staging_promoted = production_release
+      self.production_behind = None
+      self.production_deployed = production_release
+      
+      release_num_cutoff = production_release.release_num
+
+  
+    # get all created and approved releases, but don't bother showing anything below staging version
+    # get releases and approved releases, but don't bother showing anything below staging's current version
+    self.releases_created = list(filter(lambda r : (r.release_num > release_cutoff) and (r.stage == TagType.RELEASE_CREATED), releases))
+    self.releases_approved = list(filter(lambda r : (r.release_num > release_cutoff) and (r.stage == TagType.RELEASE_APPROVED), releases))
+
+
+
 def build_stages(repo):
   tags = sorted(filter(lambda tag: tag.type is not TagType.UNKNOWN, repo.fetch_tags()), key=lambda t : t.release_num)
   releases = []
+  # build releases list, newest first
   for release_num, tags in groupby(tags, lambda t: t.release_num):
-    releases.append(Release(release_num, list(tags)))
-
+    releases.insert(0, Release(release_num, list(tags)))
+  
   # pop relevant releases for each sequential stage
   stages = {}
+
+  try:
+    production_release = next(r for r in releases if r.stage == TagType.PRODUCTION_DEPLOYED)
+  except StopIteration:
+    production_release = None
+  
+  # there will only be one release on staging, find it
+  try:
+    staging_release = next(r for r in releases \
+      if (production_release is None or (r.release_num > production_release.release_num)) and 
+      ((r.stage == TagType.STAGING_APPROVED) or (r.stage == TagType.STAGING_DEPLOYED)))
       
-  stages[Stages.RELEASE_CREATED] = []
-  while releases and releases[-1].stage == TagType.RELEASE_CREATED:
-    stages[Stages.RELEASE_CREATED].append(releases.pop())
-
-  stages[Stages.RELEASE_APPROVED] = []
-  while releases and releases[-1].stage == TagType.RELEASE_APPROVED:
-    stages[Stages.RELEASE_APPROVED].append(releases.pop())
-
-  stages[Stages.STAGING_DEPLOYED] = []
-  while releases and releases[-1].stage == TagType.STAGING_DEPLOYED:
-    stages[Stages.STAGING_DEPLOYED].append(releases.pop())
-
-  stages[Stages.STAGING_APPROVED] = []
-  while releases and releases[-1].stage == TagType.STAGING_APPROVED:
-    stages[Stages.STAGING_APPROVED].append(releases.pop())
-
-  stages[Stages.PRODUCTION_DEPLOYED] = []
-  while releases and releases[-1].stage == TagType.PRODUCTION_DEPLOYED:
-    stages[Stages.PRODUCTION_DEPLOYED].append(releases.pop())
-
-  # only show the current version for what's deployed 
-  if stages[Stages.STAGING_DEPLOYED]: 
-    stages[Stages.STAGING_DEPLOYED] = stages[Stages.STAGING_DEPLOYED][0:1]
-  
-  if stages[Stages.PRODUCTION_DEPLOYED]:
-    stages[Stages.PRODUCTION_DEPLOYED] = stages[Stages.PRODUCTION_DEPLOYED][0:1]
-
-  # if nothing showing on staging pending list, staging must be on same version as production
-  if not stages[Stages.STAGING_DEPLOYED] and not stages[Stages.STAGING_APPROVED]:
-    stages[Stages.STAGING_PROMOTED] = stages[Stages.PRODUCTION_DEPLOYED]
-  else:
+    stages[Stages.STAGING_APPROVED] = [staging_release] if staging_release.stage == TagType.STAGING_APPROVED else []
+    stages[Stages.STAGING_DEPLOYED] = [staging_release] if staging_release.stage == TagType.STAGING_DEPLOYED else []
     stages[Stages.STAGING_PROMOTED] = []
-  
-  # show production as needing update if there are staging releases approved for production
-  if stages[Stages.STAGING_APPROVED] or stages[Stages.STAGING_DEPLOYED]:
-    stages[Stages.PRODUCTION_BEHIND] = stages[Stages.PRODUCTION_DEPLOYED]
+    stages[Stages.PRODUCTION_BEHIND] = [production_release] if production_release else []
     stages[Stages.PRODUCTION_DEPLOYED] = []
-  else:
+  except StopIteration:
+    staging_release = production_release
+        
+    stages[Stages.STAGING_APPROVED] = []
+    stages[Stages.STAGING_DEPLOYED] = []
+    stages[Stages.STAGING_PROMOTED] = [production_release] if production_release else []
     stages[Stages.PRODUCTION_BEHIND] = []
+    stages[Stages.PRODUCTION_DEPLOYED] = [production_release] if production_release else []
+  
+  ignore_before = staging_release.release_num
+  
+  # get all created and approved releases, but don't bother showing anything below staging version
+  # get releases and approved releases, but don't bother showing anything below staging's current version
+  stages[Stages.RELEASE_CREATED] = list(filter(lambda r : (r.release_num > ignore_before) and (r.stage == TagType.RELEASE_CREATED), releases))
+  stages[Stages.RELEASE_APPROVED] = list(filter(lambda r : (r.release_num > ignore_before) and (r.stage == TagType.RELEASE_APPROVED), releases))
     
   return stages
