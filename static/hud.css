@@ -19,7 +19,7 @@ html, body {
 }
 
 #releases td.component {
-  font-size: 110%;
+  font-size: 120%;
   vertical-align: middle;
 }
 
@@ -87,10 +87,10 @@ html, body {
 .release {
   position: relative;
 
-  width: 16em;
+  width: 14em;
   height: 5.4em;
 
-  margin: 0.75em;
+  margin: 0.75em 0.5em;
   border-radius: 1em;
   
   text-align: center;
