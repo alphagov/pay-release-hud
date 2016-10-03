@@ -1254,6 +1254,9 @@ def get_object_and_headers(url):
         u'message': 'PP-1023 Fix the stuff'
       }
     })
+    
+  elif url.startswith('https://api.github.com/repos/alphagov/pay-') and url.endswith('/git/refs/tags?per_page=100'):
+    return ([], [])
 
 
   

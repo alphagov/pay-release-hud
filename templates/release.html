@@ -1,5 +1,7 @@
-    {{release.repo.name}}
-    <span class="number"><a href="{{release.get_html_url()}}">{{release.release_num}}</a></span>
-    <span class="author">{{release.get_feature_author().get('login')}}</span>
-    <span class="timestamp">{{release.get_merge_date().strftime('%d/%m %H:%M')}}</span>
+<div class="release {{release.repo.name}}">
+    <div class="number"><a href="{{release.get_html_url()}}">{{release.release_num}}</a></div>
+    <div class="author">@{{release.get_feature_author().get('login')}}</div>
+    <div class="timestamp">{{release.get_merge_date().strftime('%d/%m %H:%M')}}</div>
     
+    {% block warning %}{% endblock %}
+</div>

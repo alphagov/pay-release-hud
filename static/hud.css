@@ -1,5 +1,6 @@
 html, body {
   font-family: ntatabularnumbers, nta, sans-serif;
+  
   color: white;
   background-color: black;
   margin: 0;
@@ -8,98 +9,147 @@ html, body {
 
 #releases {
   width: 100%;
-  border-collapse:collapse;
+  border-collapse: collapse;
 }
 
-#releases colgroup {
-  border: solid 20px black;
+#releases tr {
+}
+#releases th {
+  border-radius: 1em 1em 0 0;
 }
 
 #releases th, td {
-  text-align: center;
+  text-align: left;
   vertical-align: top;
   margin: 0;
-  width: 14%;
+}
+
+#releases td.component {
+  font-size: 110%;
+  vertical-align: middle;
+  border-radius: 1em 0 0 1em;
+}
+
+#releases td.component div.name {
+  padding: 0.5em;
+  line-height: 100%;
+  text-align: center;
+}
+
+#releases tr:last-child td {
+  height: 100%;
 }
 
 #releases th {
-  font-size: 120%;
+  height: 1em;
   text-align: center;
-  vertical-align: middle;
-  padding: 0.25em;
+  vertical-align: middle;  
+  padding: 1em 1em 0.5em 1em;
+  font-size: 1.5em;
 }
 
-#releases th.production {
-  border-bottom: solid 10px #5c9317;
+#releases tr:nth-child(even) td.component {
+  background-color: #395660;
 }
 
-#releases th.staging {
-  border-bottom: solid 10px #F47738;
+#releases tr:nth-child(even) td.releases {
+  width: 100%;
+  background-color: #395660;
 }
 
-#releases th.releases {
-  border-bottom: solid 10px #AEC6CF;
+#releases tr:nth-child(even) td.staging {
+  width: 11.2em;
+  background-color: #a18f5e;
 }
 
-#releases td.category {
-  padding: 0.75em 0 0.25em 0;
-  vertical-align: middle;
+#releases tr:nth-child(even) td.production {
+  width: 11.2em;
+  background-color: #82a15e;
 }
 
-#releases td.production {
-  
+#releases tr:nth-child(odd) td.component {
+  background-color: #263940;
 }
 
-#releases td.staging {      
+#releases tr:nth-child(odd) td.releases {
+  width: 100%;
+  background-color: #263940;
+}
+
+#releases tr:nth-child(odd) td.staging {
+  width: 11.2em;
+  background-color: #81724b;
+}
+
+#releases tr:nth-child(odd) td.production {
+  width: 11.2em;
+  background-color: #68814b;
+}
+
+#releases tr td.releases {
+  height: 4.5em;
+  overflow: hidden;
 }
 
 .release {
-  font-size: 110%;
   position: relative;
-  margin: 0.4em 0.2em;
-  border-radius: 25px;
-  padding: 5px 10px; 
+
+  width: 16em;
+  height: 5.4em;
+
+  margin: 0.75em;
+  border-radius: 1em;
+  
+  text-align: center;
   color: white;
   background-color: #7F8078;
-  text-align: center;
-  width: auto;
+}
+
+#releases .releases {
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+}
+
+#releases .releases .release {
+  float: left;
 }
 
 .release a {
   color: white!important;
 }
 
-.ok { 
-    background-color: #5c9317;
-}
-
-.warning { 
-    background-color: #F47738;
-}
-
-.alarm { 
-    background-color: #BF1E2D;
-}
 
 .number {
-  display: block;
-  font-size: 150%;
-  text-align: center;
-}
-
-.author, .timestamp {
-  display: block;
-  padding: 2px;
-  margin: 2px;
+  position: absolute; top: 0; left: 0; width: 25%; height: 1.8em; font-size: 2em; line-height: 1.8em; 
 }
 
 .author {
-  border-radius: 10px;
-  background-color: white;
-  color: black;
-  font-size: 80%;
+  position: absolute; top: 0; right: 0; width: 75%; height: 1.8em;  line-height: 1.8em;
 }
 
 .timestamp {
-  font-size: 70%;
+  position: absolute; top: 1.8em; right: 0; width: 75%; height: 1.8em; line-height: 1.8em;
 }
+
+.info {
+  position: absolute; bottom: 0; left: 0; width: 100%; height: 1.8em; line-height: 1.8em; border-radius: 0 0 1em 1em;
+}
+
+.info.warning {
+    background-color: #F47738;
+}
+
+.info.approved {
+    background-color: #5c9317;
+}
+
+.info.ok {
+    background-color: #395660;
+}
+
+.info.alarm { 
+    background-color: #BF1E2D;
+}
+
+
