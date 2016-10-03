@@ -22,8 +22,9 @@ def start():
   
     return render_template('index.html', components = components, components_behind = components_behind, TagType=TagType)
   except:
-    print "Unexpected error:", sys.exc_info()[0]
-    traceback.printexc()
+    exc_info = sys.exc_info()
+    print "Unexpected error:", exc_info
+    traceback.print_exception(*exc_info)
     return render_template('error.html')
 
 
