@@ -12,26 +12,27 @@ from enum import Enum
 import testing
 
 
-headers = {'Authorization': 'Bearer ' + os.getenv('GITHUB_TOKEN')}
-
+HEADERS = {'Authorization': 'Bearer ' + os.getenv('GITHUB_TOKEN')}
+DEV_MODE = bool(os.environ.get('DEV_MODE'))
 
 
 # cache some things
-object_cache = {}
+OBJECT_CACHE = {}
 
 def get_object_and_headers(url, cache = False, fallback = False):
-  # return testing.get_object_and_headers(url)
+  if DEV_MODE:
+    return testing.get_object_and_headers(url)
   
-  if cache and (url in object_cache):
+  if cache and (url in OBJECT_CACHE):
     return object_cache[url]
 
-  r = requests.get(url, headers=headers)
+  r = requests.get(url, headers=HEADERS)
   if r.status_code < 400:
     object = (r.headers, r.json())
-    object_cache[url] = object
+    OBJECT_CACHE[url] = object
     return object
   elif fallback:
-    if cache and (url in object_cache):
+    if cache and (url in OBJECT_CACHE):
       return object_cache[url]
     else:
       r.raise_for_status()

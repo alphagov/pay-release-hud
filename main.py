@@ -23,11 +23,12 @@ def start():
     return render_template('index.html', components = components, components_behind = components_behind, TagType=TagType)
   except:
     print "Unexpected error:", sys.exc_info()[0]
-    traceback.print_exc()
+    traceback.printexc()
     return render_template('error.html')
 
 
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
+  dev_mode = bool(os.environ.get('DEV_MODE'))
   port = int(os.environ.get('PORT', 5000))
-  app.run(host='0.0.0.0', port=port, debug=True)
+  app.run(host='0.0.0.0', port=port, debug=dev_mode)
