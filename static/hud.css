@@ -12,12 +12,6 @@ html, body {
   border-collapse: collapse;
 }
 
-#releases tr {
-}
-#releases th {
-  border-radius: 1em 1em 0 0;
-}
-
 #releases th, td {
   text-align: left;
   vertical-align: top;
@@ -27,7 +21,6 @@ html, body {
 #releases td.component {
   font-size: 110%;
   vertical-align: middle;
-  border-radius: 1em 0 0 1em;
 }
 
 #releases td.component div.name {
