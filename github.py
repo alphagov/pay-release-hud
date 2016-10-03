@@ -24,7 +24,7 @@ def get_object_and_headers(url, cache = False, fallback = False):
     return testing.get_object_and_headers(url)
   
   if cache and (url in OBJECT_CACHE):
-    return object_cache[url]
+    return OBJECT_CACHE[url]
 
   r = requests.get(url, headers=HEADERS)
   if r.status_code < 400:
@@ -32,8 +32,9 @@ def get_object_and_headers(url, cache = False, fallback = False):
     OBJECT_CACHE[url] = object
     return object
   elif fallback:
+    print "Request to %s yielded %s" % (url, r.status_code)
     if cache and (url in OBJECT_CACHE):
-      return object_cache[url]
+      return OBJECT_CACHE[url]
     else:
       r.raise_for_status()
   else:
