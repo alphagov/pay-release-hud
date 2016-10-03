@@ -13,7 +13,7 @@ import testing
 
 
 HEADERS = {'Authorization': 'Bearer ' + os.getenv('GITHUB_TOKEN')}
-DEV_MODE = bool(os.environ.get('DEV_MODE'))
+DEV_MODE = os.environ.get('DEV_MODE') == 'true'
 
 
 # cache some things
