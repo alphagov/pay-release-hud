@@ -40,11 +40,6 @@
             {% include 'staging-deployed.html' %}
           {% endif %}
           
-          {% if component.staging_approved %}
-            {% set release = component.staging_approved %}
-            {% include 'staging-approved.html' %}
-          {% endif %}
-          
           {% if component.staging_promoted %}
             {% set release = component.staging_promoted %}
             {% include 'staging-promoted.html' %}

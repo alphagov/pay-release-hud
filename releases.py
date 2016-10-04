@@ -55,7 +55,7 @@ class TagType(Enum):
   RELEASE_CREATED     = 1
   RELEASE_APPROVED    = 2
   STAGING_DEPLOYED    = 3
-  STAGING_APPROVED    = 4
+  STAGING_APPROVED    = 4 # deprecated, no-longer used, remove soon
   PRODUCTION_DEPLOYED = 5
   
   
@@ -81,7 +81,7 @@ class Tag:
           self.release_num = int(staging_deployed_match.group(1))
           self.type = TagType.STAGING_DEPLOYED
         else:
-          staging_approved_match = re.match('^approved-alpha_staging-[0-9]+-([0-9]+)$', self.name)
+          staging_approved_match = re.match('^approved-alpha_staging-[0-9]+-([0-9]+)$', self.name) # deprecated, no-longer used, remove soon
           if staging_approved_match:
             self.release_num = int(staging_approved_match.group(1))
             self.type = TagType.STAGING_APPROVED
@@ -182,8 +182,7 @@ class Component:
         if (r.release_num > staging_release_num_cutoff) and ((r.stage == TagType.STAGING_APPROVED) or (r.stage == TagType.STAGING_DEPLOYED)))
     
       # separate further in to stages
-      self.staging_approved = staging_release if staging_release.stage == TagType.STAGING_APPROVED else None
-      self.staging_deployed = staging_release if staging_release.stage == TagType.STAGING_DEPLOYED else None
+      self.staging_deployed = staging_release # if staging_release.stage == TagType.STAGING_DEPLOYED else None
       self.staging_promoted = None
       self.production_behind = production_deployed
       self.production_deployed = None
@@ -191,7 +190,6 @@ class Component:
       release_num_cutoff = max(production_deployed.release_num, staging_release.release_num)
     except StopIteration:
       # no staging release so staging must be same as production
-      self.staging_approved = None
       self.staging_deployed = None
       self.staging_promoted = production_deployed
       self.production_behind = None
