@@ -60,6 +60,11 @@ html, body {
   background-color: #82a15e;
 }
 
+#releases tr:nth-child(even) td.production.alarm {
+  width: 11.2em;
+  background-color: #ff0000;
+}
+
 #releases tr:nth-child(odd) td.component {
   background-color: #263940;
 }
@@ -77,6 +82,11 @@ html, body {
 #releases tr:nth-child(odd) td.production {
   width: 11.2em;
   background-color: #68814b;
+}
+
+#releases tr:nth-child(odd) td.production.alarm {
+  width: 11.2em;
+  background-color: #dd0000;
 }
 
 #releases tr td.releases {

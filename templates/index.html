@@ -49,7 +49,7 @@
           {% endif %}
         </td>
       
-        <td class="production">
+        <td class="production {% if components_behind > 1 %}alarm{% endif %}">
           {% if component.production_behind %}
             {% set release = component.production_behind %}
             {% if components_behind > 1 %}
