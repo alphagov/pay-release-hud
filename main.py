@@ -12,7 +12,7 @@ app = Flask(__name__)
 def start():
   try:
     components = []
-    for repo in ('pay-frontend', 'pay-selfservice', 'pay-connector', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger'):
+    for repo in ('pay-frontend', 'pay-selfservice', 'pay-connector', 'pay-publicapi', 'pay-cardid', 'pay-publicauth', 'pay-logger', 'pay-adminusers'):
       components.append(Component(Repo('alphagov', repo)))
     
     components_behind = 0
