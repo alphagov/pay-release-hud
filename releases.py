@@ -65,6 +65,7 @@ class Tag:
     self.repo = repo
     self.name = name
     self.url = url
+    self.merge_date = None;
     
     release_created_match = re.match('^alpha_release-([0-9]+)$', self.name)
     if release_created_match:
@@ -105,7 +106,10 @@ class Tag:
     return self.get_commit().get('html_url', '')
     
   def get_merge_date(self):
-    return datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+    if not self.merge_date:
+      self.merge_date = datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+
+    return self.merge_date
     
   def get_feature_commit(self):
     parents = self.get_commit()['parents']
@@ -139,6 +143,7 @@ class Release:
     self.tags = tags
     self.repo = self.tags[0].repo
     self.stage = TagType(max(map(lambda tag: tag.type.value, tags)))
+    self.is_duplicate = False
 
   def get_merge_date(self):
     return self.tags[0].get_merge_date()
@@ -148,6 +153,9 @@ class Release:
     
   def get_html_url(self):
     return self.tags[0].get_html_url()
+
+  def set_duplicate(self):
+    self.is_duplicate = True
 
   def __repr__(self):
     return "Release(%s %s %s)" % (self.repo, self.release_num, TagType(self.stage))
@@ -197,6 +205,12 @@ class Component:
       
       release_num_cutoff = staging_release_num_cutoff
   
+    # identify release duplicates by comparing all pairs upt to and including current staging deploy
+    duplicate_candiates = list(filter(lambda r : (r.release_num >= release_num_cutoff), releases))
+    for release, prev in zip(duplicate_candiates, duplicate_candiates[1:]):
+      if release.tags[0].get_merge_date()  == prev.tags[0].get_merge_date():
+        release.set_duplicate()
+
     # get all created and approved releases, but don't bother showing anything below staging version
     # get releases and approved releases, but don't bother showing anything below staging's current version
     self.releases = list(filter(lambda r : (r.release_num > release_num_cutoff) and \
