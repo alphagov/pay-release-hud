@@ -157,7 +157,6 @@ class Release:
   def set_duplicate(self):
     self.is_duplicate = True
 
-
   def __repr__(self):
     return "Release(%s %s %s)" % (self.repo, self.release_num, TagType(self.stage))
 
@@ -175,11 +174,6 @@ class Component:
       tag_list = list(tags)
       release = Release(release_num, tag_list)
       releases.insert(0, release)
-      prev_release = release
-    rel_len = len(releases)
-    if rel_len >=2:
-      if releases[0].tags[0].get_merge_date()  == releases[1].tags[0].get_merge_date():
-          releases[0].set_duplicate()
 
     try:
       # find latest production deploy
@@ -211,6 +205,12 @@ class Component:
       
       release_num_cutoff = staging_release_num_cutoff
   
+    # identify release duplicates by comparing all pairs upt to and including current staging deploy
+    duplicate_candiates = list(filter(lambda r : (r.release_num >= release_num_cutoff), releases))
+    for release, prev in zip(duplicate_candiates, duplicate_candiates[1:]):
+      if release.tags[0].get_merge_date()  == prev.tags[0].get_merge_date():
+        release.set_duplicate()
+
     # get all created and approved releases, but don't bother showing anything below staging version
     # get releases and approved releases, but don't bother showing anything below staging's current version
     self.releases = list(filter(lambda r : (r.release_num > release_num_cutoff) and \

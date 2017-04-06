@@ -28,7 +28,7 @@
         <td class="releases">          
           <div style="width: 100%; height: 6.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ">
             {% for release in component.releases %}
-              {% if release.is_duplicate == 'duplicate' %}
+              {% if release.is_duplicate %}
                 {% include 'release-duplicate.html' %}
               {% elif release.stage == TagType.RELEASE_APPROVED%}
                 {% include 'release-approved.html' %}
