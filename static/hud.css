@@ -122,7 +122,6 @@ html, body {
   color: white!important;
 }
 
-
 .number {
   position: absolute; top: 0; left: 0; width: 25%; height: 1.8em; font-size: 2em; line-height: 1.8em; 
 }
@@ -153,6 +152,10 @@ html, body {
 
 .info.alarm { 
     background-color: #BF1E2D;
+}
+
+.info.duplicate {
+  background-color: lightgray
 }
 
 

@@ -65,6 +65,7 @@ class Tag:
     self.repo = repo
     self.name = name
     self.url = url
+    self.merge_date = None;
     
     release_created_match = re.match('^alpha_release-([0-9]+)$', self.name)
     if release_created_match:
@@ -105,7 +106,10 @@ class Tag:
     return self.get_commit().get('html_url', '')
     
   def get_merge_date(self):
-    return datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+    if not self.merge_date:
+      self.merge_date = datetime.datetime.strptime(self.get_commit()['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+
+    return self.merge_date
     
   def get_feature_commit(self):
     parents = self.get_commit()['parents']
@@ -139,6 +143,7 @@ class Release:
     self.tags = tags
     self.repo = self.tags[0].repo
     self.stage = TagType(max(map(lambda tag: tag.type.value, tags)))
+    self.is_duplicate = False
 
   def get_merge_date(self):
     return self.tags[0].get_merge_date()
@@ -148,6 +153,10 @@ class Release:
     
   def get_html_url(self):
     return self.tags[0].get_html_url()
+
+  def set_duplicate(self):
+    self.is_duplicate = True
+
 
   def __repr__(self):
     return "Release(%s %s %s)" % (self.repo, self.release_num, TagType(self.stage))
@@ -166,6 +175,11 @@ class Component:
       tag_list = list(tags)
       release = Release(release_num, tag_list)
       releases.insert(0, release)
+      prev_release = release
+    rel_len = len(releases)
+    if rel_len >=2:
+      if releases[0].tags[0].get_merge_date()  == releases[1].tags[0].get_merge_date():
+          releases[0].set_duplicate()
 
     try:
       # find latest production deploy
