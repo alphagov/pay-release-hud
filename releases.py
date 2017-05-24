@@ -53,10 +53,8 @@ class Repo:
 class TagType(Enum):
   UNKNOWN             = 0
   RELEASE_CREATED     = 1
-  RELEASE_APPROVED    = 2
-  STAGING_DEPLOYED    = 3
-  STAGING_APPROVED    = 4 # deprecated, no-longer used, remove soon
-  PRODUCTION_DEPLOYED = 5
+  STAGING_DEPLOYED    = 2
+  PRODUCTION_DEPLOYED = 3
   
   
 
@@ -72,28 +70,18 @@ class Tag:
       self.release_num = int(release_created_match.group(1))
       self.type = TagType.RELEASE_CREATED
     else:    
-      release_approved_match = re.match('^approved-alpha_release-([0-9]+)$', self.name)
-      if release_approved_match:
-        self.release_num = int(release_approved_match.group(1))
-        self.type = TagType.RELEASE_APPROVED
-      else:
-        staging_deployed_match = re.match('^alpha_staging-[0-9]+-([0-9]+)$', self.name)
-        if staging_deployed_match:
-          self.release_num = int(staging_deployed_match.group(1))
-          self.type = TagType.STAGING_DEPLOYED
+      staging_deployed_match = re.match('^alpha_staging-[0-9]+-([0-9]+)$', self.name)
+      if staging_deployed_match:
+        self.release_num = int(staging_deployed_match.group(1))
+        self.type = TagType.STAGING_DEPLOYED
+      else:    
+        production_deployed_match = re.match('^alpha_production-[0-9]+-([0-9]+)$', self.name)
+        if production_deployed_match:
+          self.release_num = int(production_deployed_match.group(1))
+          self.type = TagType.PRODUCTION_DEPLOYED
         else:
-          staging_approved_match = re.match('^approved-alpha_staging-[0-9]+-([0-9]+)$', self.name) # deprecated, no-longer used, remove soon
-          if staging_approved_match:
-            self.release_num = int(staging_approved_match.group(1))
-            self.type = TagType.STAGING_APPROVED
-          else:    
-            production_deployed_match = re.match('^alpha_production-[0-9]+-([0-9]+)$', self.name)
-            if production_deployed_match:
-              self.release_num = int(production_deployed_match.group(1))
-              self.type = TagType.PRODUCTION_DEPLOYED
-            else:
-              self.release_num = None
-              self.type = TagType.UNKNOWN
+          self.release_num = None
+          self.type = TagType.UNKNOWN
             
     
   def get_details(self):
@@ -185,9 +173,8 @@ class Component:
       
     try:
       # find latest staging release (only one)
-      # it will either be in STAGING_APPROVED or STAGING_DEPLOYED
       staging_release = next(r for r in releases \
-        if (r.release_num > staging_release_num_cutoff) and ((r.stage == TagType.STAGING_APPROVED) or (r.stage == TagType.STAGING_DEPLOYED)))
+        if (r.release_num > staging_release_num_cutoff) and (r.stage == TagType.STAGING_DEPLOYED))
     
       # separate further in to stages
       self.staging_deployed = staging_release # if staging_release.stage == TagType.STAGING_DEPLOYED else None
@@ -211,10 +198,8 @@ class Component:
       if release.tags[0].get_merge_date()  == prev.tags[0].get_merge_date():
         release.set_duplicate()
 
-    # get all created and approved releases, but don't bother showing anything below staging version
-    # get releases and approved releases, but don't bother showing anything below staging's current version
     self.releases = list(filter(lambda r : (r.release_num > release_num_cutoff) and \
-       ((r.stage == TagType.RELEASE_CREATED) or (r.stage == TagType.RELEASE_APPROVED)), releases))
+       (r.stage == TagType.RELEASE_CREATED), releases))
 
     # sort ascending releases
     self.releases.sort(key=lambda r: r.release_num)

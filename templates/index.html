@@ -30,10 +30,8 @@
             {% for release in component.releases %}
               {% if release.is_duplicate %}
                 {% include 'release-duplicate.html' %}
-              {% elif release.stage == TagType.RELEASE_APPROVED%}
-                {% include 'release-approved.html' %}
               {% else %}
-                {% include 'release-created.html' %}
+                {% include 'ready.html' %}
               {% endif %}
             {% endfor %}
           </div>
